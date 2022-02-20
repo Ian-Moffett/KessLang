@@ -188,6 +188,18 @@ void tokenize(lexer_t* lexer, char* buffer) {
                     if (strcmp(lexBuf, IO_PRINT_STATEMENT) == 0) { 
                         push_token(&lexer->tokenlist, create_token(T_PRINT, "print", false));
                         invalidTok = false;
+                    } else {
+                        bool nonSpace = false;
+
+                        for (int i = 0; i < strlen(lexBuf); ++i) {
+                            if (lexBuf[i] != ' ') {
+                                nonSpace = true;
+                            }
+                        }
+
+                        if (!(nonSpace)) {
+                            invalidTok = false;
+                        }
                     }
 
                     if (invalidTok && !(ignoreErrors)) {
@@ -211,6 +223,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
                 lbidx = 0;
                 lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                memset(lexBuf, '\0', strlen(lexBuf));
                 ++lexer->idx;
                 continue;
             case '\n':
