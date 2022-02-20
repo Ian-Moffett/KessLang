@@ -176,8 +176,10 @@ void tokenize(lexer_t* lexer, char* buffer) {
                 lexBuf = (char*)realloc(lexBuf, sizeof(char));
                 skipSpaces = true;
                 continue;
+            case '\n':
+                ++lexer->lineNum;
+                push_token(&lexer->tokenlist, create_token(T_EOL, "", false));
             case ';':
-                semicolonFound = true;
                 push_token(&lexer->tokenlist, create_token(T_END_STATEMENT, ";", false));
             case ' ':
                 {
@@ -225,21 +227,6 @@ void tokenize(lexer_t* lexer, char* buffer) {
                 lexBuf = (char*)realloc(lexBuf, sizeof(char));
                 memset(lexBuf, '\0', strlen(lexBuf));
                 ++lexer->idx;
-                continue;
-            case '\n':
-                if (semicolonFound) {
-                    semicolonFound = false;
-                } else {
-                    kl_log_err("SyntaxError: EOL before semicolon.", "", lexer->lineNum);
-                    lexer->error = false;
-                    run = false;
-                }
-
-                lbidx = 0;
-                lexBuf = (char*)realloc(lexBuf, sizeof(char));
-                ++lexer->idx;
-                ++lexer->lineNum;
-                push_token(&lexer->tokenlist, create_token(T_EOL, "", false));
                 continue;
             default:
                 if (lexer->curChar == COMMENT_SYM[0]) {
