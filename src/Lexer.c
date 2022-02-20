@@ -229,8 +229,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
                 ++lexer->idx;
                 continue;
             default:
-                if (lexer->curChar == COMMENT_SYM[0]) {
-                    ++lexer->idx;
+                if (lexer->curChar == COMMENT_SYM[0]) { 
                     lexer->curChar = buffer[lexer->idx];
                     if (lexer->curChar == COMMENT_SYM[1]) {
                         while (lexer->curChar != '\n') {
@@ -242,6 +241,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
                     } else {
                         run = false;
                         lexer->error = true;
+                        printf("%c\n", buffer[lexer->idx + 1]);
                         kl_log_err("TokenError: Invalid token found while lexing.", COMMENT_SYM_0, lexer->lineNum);
                         printf("\n\033[35mDid you mean \"%c%c\"?\n", COMMENT_SYM[0], COMMENT_SYM[1]);
                     }

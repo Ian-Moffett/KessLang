@@ -1,2 +1,2 @@
-?var = "Hello!"
+?var = "Hello";  !! Says hello.
 print ?var
