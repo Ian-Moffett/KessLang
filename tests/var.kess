@@ -1,3 +1,3 @@
-?var = "Hello";  !! Has value of "Hello."
+?var = "Hello"  !! Has value of "Hello."
 ?var1 = "Meow."  !! Has value of cat sound.
 print ?var       !! Prints first value.
