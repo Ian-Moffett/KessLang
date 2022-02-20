@@ -1,7 +1,7 @@
 import re
 import os
 
-if os.getcwd() != "/home/ian1/KessLang2/src/include/config/util":
+if os.getcwd() != "/home/ian1/KessLang/src/include/config/util":
     print("Failed to sync. You must be in \"/home/ian1/KessLang2/config/util\"!")
     exit(1);
 
