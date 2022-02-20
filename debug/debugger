@@ -1,0 +1,12 @@
+#!/bin/bash
+
+valgrind --leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         --verbose \
+         --log-file=debug/memcheck.txt \
+          --show-error-list=no \
+         bin/main test.kess
+
+cat debug/memcheck.txt
+rm debug/memcheck.txt
