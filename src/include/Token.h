@@ -14,6 +14,9 @@ typedef enum {
     T_VAR_PREFIX,
     T_EOL,
     T_END_STATEMENT,
+    T_DEREF_OP,
+    T_ASM_START,
+    T_ASM_END,
 } tokentype_t;
 
 

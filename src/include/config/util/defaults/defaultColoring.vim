@@ -5,7 +5,24 @@ syntax match KessVar /\(?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/
 syntax match KessInt /[0-9]\+/
 syntax match KessHex /0\(x\|X\)[0-9A-Fa-f]/
 syntax match KessAssignment /=/
-
+syntax match asmStart /__asm_start/
+syntax match asmEnd /__asm_end/
+syntax match asmMov /mov/
+syntax match asmLodsb /lodsb/
+syntax match asmDb /db/
+syntax match asmDw /dw/
+syntax match asmDd /dd/
+syntax match asmXor /xor/
+syntax match asmEax /eax/
+syntax match asmEbx /ebx/
+syntax match asmEdx /edx/
+syntax match asmEcx /ecx/
+syntax match asmEbp /ebp/
+syntax match asmEdi /edi/
+syntax match asmEsi /esi/
+syntax match asmOr /or/
+syntax match asmAnd /and/
+syntax match asmCmp /cmp/
 
 highlight KessPrint ctermfg=220 guifg=#ffd700
 " highlight KessStringLit ctermfg=99 guifg=#875fff
@@ -15,3 +32,20 @@ highlight KessVar ctermfg=79 guifg=#5fd7af
 highlight KessInt ctermfg=205 guifg=#ff5faf
 highlight KessHex ctermfg=205 guifg=#ff5faf
 highlight KessAssignment ctermfg=223 guifg=#ffd7af
+highlight asmStart ctermfg=104 guifg=#8787d7  
+highlight asmEnd ctermfg=104 guifg=#8787d7  
+highlight asmMov ctermfg=79 guifg=#5fd7af
+highlight asmOr ctermfg=79 guifg=#5fd7af
+highlight asmAnd ctermfg=79 guifg=#5fd7af
+highlight asmCmp ctermfg=79 guifg=#5fd7af
+highlight asmLodsb ctermfg=79 guifg=#5fd7af
+highlight asmDb ctermfg=79 guifg=#5fd7af
+highlight asmDw ctermfg=79 guifg=#5fd7af
+highlight asmDd ctermfg=79 guifg=#5fd7af
+highlight asmXor ctermfg=79 guifg=#5fd7af
+highlight asmEax ctermfg=209 guifg=#ff875f
+highlight asmEdx ctermfg=209 guifg=#ff875f
+highlight asmEbx ctermfg=209 guifg=#ff875f
+highlight asmEbp ctermfg=209 guifg=#ff875f
+highlight asmEdi ctermfg=209 guifg=#ff875f
+highlight asmEsi ctermfg=209 guifg=#ff875f
