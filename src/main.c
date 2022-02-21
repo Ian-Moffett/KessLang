@@ -13,6 +13,7 @@ bool codegenError = false;
 char* org = NULL;
 bool noexit = false;
 bool endhalt = false;
+unsigned char bits;
 
 int main(int argc, char* argv[]) {
     // Existing file check.
@@ -47,6 +48,10 @@ int main(int argc, char* argv[]) {
             ++i;
         } else if (strcmp(argv[i], "-no-exit") == 0) {
             noexit = true;
+        } else if (strcmp(argv[i], "-bits-32") == 0) {
+            bits = 32;
+        } else if (strcmp(argv[i], "-bits-64") == 0) {
+            bits = 64;
         } else if (strcmp(argv[i], "-end-halt") == 0) {
             endhalt = true;
         } else if (argv[i][0] == '-') {

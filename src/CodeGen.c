@@ -4,6 +4,7 @@ extern bool codegenError;
 extern char* org;
 extern bool noexit;
 extern bool endhalt;
+extern unsigned char bits;
 
 static int hashmap_hash(const char* key, const int MAX_SIZE) {
     int sum = 0;
@@ -38,6 +39,12 @@ void kl_cgen_start(ast_t ast) {
                 "; generated automatically by\n"
                 "; the KessLang compiler which\n"
                 "; is written by Ian Moffett.\n\n");
+
+    if (bits == 32) {
+        fprintf(fp, "bits 32\n");
+    } else if (bits == 64) {
+        fprintf(fp, "bits 64\n");
+    }
 
     if (org) {
         fprintf(fp, "org %s\n\n", org);
