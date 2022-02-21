@@ -6,6 +6,7 @@
 #include "Debugger.h"
 #include "util/kl_assert.h"
 #include <stdbool.h>
+#include <limits.h>
 
 
 typedef struct {

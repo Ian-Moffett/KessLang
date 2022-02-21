@@ -94,6 +94,8 @@ static char* kl_lex_get_hex(char* buffer, lexer_t* lexer) {
         }
 
         if (!(kl_lex_ishex(lexer->curChar))) {
+            ++lexer->idx;
+            lexer->curChar = buffer[lexer->idx];
             break;
         }
 
@@ -237,6 +239,12 @@ void tokenize(lexer_t* lexer, char* buffer) {
         }
 
         switch (lexer->curChar) {
+            case '*':
+                push_token(&lexer->tokenlist, create_token(T_DEREF_OP, "*", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
             case '=':
                 push_token(&lexer->tokenlist, create_token(T_EQUALS_OP, "=", false));
                 lbidx = 0;

@@ -84,6 +84,13 @@ int main(int argc, char* argv[]) {
     parser_t parser = {.idx = 0, .tokenlist = lexer.tokenlist};
 
     parse(&parser);
+
+    if (parser.error) { 
+        ast_destroy(&parser.ast);
+        destroy_tokenlist(&lexer.tokenlist);
+        free(buffer);
+        exit(1);
+    }
     
     kl_cgen_start(parser.ast);
 

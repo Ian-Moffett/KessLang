@@ -194,6 +194,25 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "    mov edx, %d\n\n", strlen(value2Print) + 1); 
             fprintf(fp, "    int 0x80\n\n");
             ++curLabel;
+        } else if (strcmp(curNode.key, "DEREF") == 0) {
+            if (curSection != CODE_SEC) {
+                curSection = CODE_SEC;
+                fprintf(fp, "section .text\n");
+            }
+
+            fprintf(fp, "_%d:\n", curLabel);
+            ++curLabel;
+            fprintf(fp, "    mov [%s], byte \"%s\"\n\n", curNode.value, curNode.children[0].value);            
+
+            /*
+            if (!(numericVars[hashmap_hash(curNode.value, nVarArrSz)])) {
+                kl_log_err("SymbolError: No dereferenceable variable by that name.", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
+            */
+
+
         }
     }
     

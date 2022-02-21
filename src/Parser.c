@@ -58,6 +58,23 @@ void parse(parser_t* parser) {
                 }
 
                 break;
+            case T_DEREF_OP:
+                if (peek(parser, parser->idx + 1).type == T_INT && peek(parser, parser->idx + 2).type == T_EQUALS_OP) {
+                    ast_node_t derefNode = createNode("DEREF", peek(parser, parser->idx + 1).tok, false, line);
+                    switch (peek(parser, parser->idx + 3).type) {
+                        case T_INT:
+                            node_push_child(&derefNode, createChild("INT", peek(parser, parser->idx + 3).tok, false));
+                            break;
+                        case T_STR:
+                            node_push_child(&derefNode, createChild("STR", peek(parser, parser->idx + 3).tok, false));  
+                            kl_assert(strlen(peek(parser, parser->idx + 3).tok) == 1, "SyntaxError: Expected char.", parser, PARSER_STAGE, line, peek(parser, parser->idx + 3).tok);
+                            break;
+                    }
+
+                    ast_push_node(&parser->ast, derefNode);
+
+                }
+                break;
             case T_EOL:
                 ++line;
                 break;

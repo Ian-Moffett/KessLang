@@ -23,6 +23,7 @@ syntax match asmEsi /esi/
 syntax match asmOr /or/
 syntax match asmAnd /and/
 syntax match asmCmp /cmp/
+syntax match KessDeref /\*/
 
 highlight KessPrint ctermfg=220 guifg=#ffd700
 " highlight KessStringLit ctermfg=99 guifg=#875fff
@@ -49,3 +50,4 @@ highlight asmEbx ctermfg=209 guifg=#ff875f
 highlight asmEbp ctermfg=209 guifg=#ff875f
 highlight asmEdi ctermfg=209 guifg=#ff875f
 highlight asmEsi ctermfg=209 guifg=#ff875f
+highlight KessDeref ctermfg=167 guifg=#d75f5f
