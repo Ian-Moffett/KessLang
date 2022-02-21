@@ -1,7 +1,10 @@
 #include "include/CodeGen.h"
 
 extern bool codegenError;
-
+extern char* org;
+extern bool noexit;
+extern bool endhalt;
+extern unsigned char bits;
 
 static int hashmap_hash(const char* key, const int MAX_SIZE) {
     int sum = 0;
@@ -36,6 +39,16 @@ void kl_cgen_start(ast_t ast) {
                 "; generated automatically by\n"
                 "; the KessLang compiler which\n"
                 "; is written by Ian Moffett.\n\n");
+
+    if (bits == 32) {
+        fprintf(fp, "bits 32\n");
+    } else if (bits == 64) {
+        fprintf(fp, "bits 64\n");
+    }
+
+    if (org) {
+        fprintf(fp, "org %s\n\n", org);
+    }
 
     fprintf(fp, "global _start\n\n");
     fprintf(fp, "section .text\n");
@@ -194,6 +207,25 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "    mov edx, %d\n\n", strlen(value2Print) + 1); 
             fprintf(fp, "    int 0x80\n\n");
             ++curLabel;
+        } else if (strcmp(curNode.key, "DEREF") == 0) {
+            if (curSection != CODE_SEC) {
+                curSection = CODE_SEC;
+                fprintf(fp, "section .text\n");
+            }
+
+            fprintf(fp, "_%d:\n", curLabel);
+            ++curLabel;
+            fprintf(fp, "    mov [%s], byte \"%s\"\n\n", curNode.value, curNode.children[0].value);            
+
+            /*
+            if (!(numericVars[hashmap_hash(curNode.value, nVarArrSz)])) {
+                kl_log_err("SymbolError: No dereferenceable variable by that name.", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
+            */
+
+
         }
     }
     
@@ -204,9 +236,16 @@ void kl_cgen_start(ast_t ast) {
     }
 
     fprintf(fp, "_%d:\n", curLabel);
-    fprintf(fp, "    mov eax, 1\n");
-    fprintf(fp, "    mov ebx, 0\n");
-    fprintf(fp, "    int 0x80\n");
+    
+    if (!(noexit) && !(endhalt)) {
+        fprintf(fp, "    mov eax, 1\n");
+        fprintf(fp, "    mov ebx, 0\n");
+        fprintf(fp, "    int 0x80\n");
+    } else if (!(endhalt)) {
+        fprintf(fp, "    ret\n");
+    } else {
+        fprintf(fp, "    cli\n    hlt\n");
+    }
 
     fclose(fp);
 }

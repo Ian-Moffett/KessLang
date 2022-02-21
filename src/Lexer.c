@@ -20,6 +20,38 @@ static bool kl_lex_isint(char c) {
 }
 
 
+static bool kl_lex_ishex(char c) {
+    switch (c) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case 'A':
+        case 'a':
+        case 'B':
+        case 'b':
+        case 'C':
+        case 'c':
+        case 'D':
+        case 'd':
+        case 'E':
+        case 'e':
+        case 'F':
+        case 'f':
+            return true;
+
+    }
+
+    return false;
+}
+
+
 static char* kl_lex_get_int(char* buffer, lexer_t* lexer) {
     char* intBuf = (char*)calloc(2, sizeof(char));
     unsigned ibidx = 0;
@@ -39,6 +71,41 @@ static char* kl_lex_get_int(char* buffer, lexer_t* lexer) {
     }
 
     return intBuf;
+}
+
+
+static char* kl_lex_get_hex(char* buffer, lexer_t* lexer) {
+    char* hexBuf = (char*)calloc(2, sizeof(char));
+    unsigned int hidx = 0;
+
+    bool start = true;
+
+    while (lexer->idx < strlen(buffer)) {
+        lexer->curChar = buffer[lexer->idx];
+
+        
+        if (lexer->curChar == 'x' || lexer->curChar == 'X' && start) {
+            hexBuf[hidx] = lexer->curChar;
+            ++hidx;
+            hexBuf = (char*)realloc(hexBuf, sizeof(char) * (hidx + 2));
+            ++lexer->idx;
+            start = false;
+            continue;
+        }
+
+        if (!(kl_lex_ishex(lexer->curChar))) {
+            ++lexer->idx;
+            lexer->curChar = buffer[lexer->idx];
+            break;
+        }
+
+        hexBuf[hidx] = lexer->curChar;
+        ++hidx;
+        hexBuf = (char*)realloc(hexBuf, sizeof(char) * (hidx + 2));
+        ++lexer->idx;
+    }
+
+    return hexBuf;
 }
 
 
@@ -114,6 +181,16 @@ void tokenize(lexer_t* lexer, char* buffer) {
         char COMMENT_SYM_0[2] = {'\0'};
         COMMENT_SYM_0[0] = C_SYM_ARR[0];
 
+        if (lexer->curChar == '0' && buffer[lexer->idx + 1] == 'x') {
+            char* hex = kl_lex_get_hex(buffer, lexer);
+            push_token(&lexer->tokenlist, create_token(T_INT, hex, true));
+            skipSpaces = true;
+            ignoreErrors = true;
+            lbidx = 0;
+            lexBuf = (char*)realloc(lexBuf, sizeof(char));
+
+        }
+
         if (kl_lex_isint(lexer->curChar)) { 
             char* dec = kl_lex_get_int(buffer, lexer);
             push_token(&lexer->tokenlist, create_token(T_INT, dec, true));
@@ -162,6 +239,12 @@ void tokenize(lexer_t* lexer, char* buffer) {
         }
 
         switch (lexer->curChar) {
+            case '*':
+                push_token(&lexer->tokenlist, create_token(T_DEREF_OP, "*", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
             case '=':
                 push_token(&lexer->tokenlist, create_token(T_EQUALS_OP, "=", false));
                 lbidx = 0;

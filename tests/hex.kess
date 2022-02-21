@@ -1,0 +1,2 @@
+?var = 0x5;
+print ?var;
