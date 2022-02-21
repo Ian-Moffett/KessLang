@@ -216,16 +216,28 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "_%d:\n", curLabel);
             ++curLabel;
             fprintf(fp, "    mov [%s], byte \"%s\"\n\n", curNode.value, curNode.children[0].value);            
-
-            /*
-            if (!(numericVars[hashmap_hash(curNode.value, nVarArrSz)])) {
+        } else if (strcmp(curNode.key, "DEREF_VAR") == 0) {
+            if (!(numericVars[hashmap_hash(curNode.value, nVarArrSz)]) || nVarArrSz == 0) {
                 kl_log_err("SymbolError: No dereferenceable variable by that name.", curNode.value, curNode.lineNumber);
                 codegenError = true;
                 break;
             }
-            */
 
+            if (curSection != CODE_SEC) {
+                curSection = CODE_SEC;
+                fprintf(fp, "section .text\n");
+            }
 
+            if (strcmp(curNode.children[0].key, "STR") == 0 && strlen(curNode.children[0].value) > 1) {                
+                kl_log_err("SyntaxError: Expected char.", curNode.children[0].value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
+
+            fprintf(fp, "_%d:\n", curLabel, curLabel);
+            ++curLabel;
+            fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
+            fprintf(fp, "    mov [ebx], byte \"%s\"\n\n", curNode.children[0].value);
         }
     }
     

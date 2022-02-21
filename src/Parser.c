@@ -60,7 +60,7 @@ void parse(parser_t* parser) {
                 break;
             case T_DEREF_OP:
                 if (peek(parser, parser->idx + 1).type == T_INT && peek(parser, parser->idx + 2).type == T_EQUALS_OP) {
-                    kl_assert(strlen(peek(parser, parser->idx + 3).tok) == 1, "SyntaxError: Expected value after assignment operator.", parser, PARSER_STAGE, line, "");
+                    kl_assert(strlen(peek(parser, parser->idx + 3).tok) >= 1, "SyntaxError: Expected value after assignment operator.", parser, PARSER_STAGE, line, "");
                     ast_node_t derefNode = createNode("DEREF", peek(parser, parser->idx + 1).tok, false, line);
                     switch (peek(parser, parser->idx + 3).type) {
                         case T_INT:
@@ -74,7 +74,21 @@ void parse(parser_t* parser) {
 
                     ast_push_node(&parser->ast, derefNode);
 
+                } else if (peek(parser, parser->idx + 1).type == T_VAR_PREFIX && peek(parser, parser->idx + 3).type == T_EQUALS_OP && peek(parser, parser->idx + 4).type != T_VAR_PREFIX) {
+                    kl_assert(strlen(peek(parser, parser->idx + 4).tok) >= 1, "SyntaxError: Expected value after assignment operator.", parser, PARSER_STAGE, line, "");
+                    ast_node_t derefNode = createNode("DEREF_VAR", peek(parser, parser->idx + 2).tok, false, line);
+                    
+                    if (peek(parser, parser->idx + 4).type == T_INT) {
+                        node_push_child(&derefNode, createChild("INT", peek(parser, parser->idx + 4).tok, false));
+                    } else if (peek(parser, parser->idx + 4).type == T_STR) {                    
+                        node_push_child(&derefNode, createChild("STR", peek(parser, parser->idx + 4).tok, false));
+                    }
+
+                    ast_push_node(&parser->ast, derefNode);
                 }
+
+                ++parser->idx;
+                ++parser->idx;
                 break;
             case T_EOL:
                 ++line;
