@@ -1,7 +1,9 @@
 #include "include/CodeGen.h"
 
 extern bool codegenError;
-
+extern char* org;
+extern bool noexit;
+extern bool endhalt;
 
 static int hashmap_hash(const char* key, const int MAX_SIZE) {
     int sum = 0;
@@ -36,6 +38,10 @@ void kl_cgen_start(ast_t ast) {
                 "; generated automatically by\n"
                 "; the KessLang compiler which\n"
                 "; is written by Ian Moffett.\n\n");
+
+    if (org) {
+        fprintf(fp, "org %s\n\n", org);
+    }
 
     fprintf(fp, "global _start\n\n");
     fprintf(fp, "section .text\n");
@@ -223,9 +229,16 @@ void kl_cgen_start(ast_t ast) {
     }
 
     fprintf(fp, "_%d:\n", curLabel);
-    fprintf(fp, "    mov eax, 1\n");
-    fprintf(fp, "    mov ebx, 0\n");
-    fprintf(fp, "    int 0x80\n");
+    
+    if (!(noexit) && !(endhalt)) {
+        fprintf(fp, "    mov eax, 1\n");
+        fprintf(fp, "    mov ebx, 0\n");
+        fprintf(fp, "    int 0x80\n");
+    } else if (!(endhalt)) {
+        fprintf(fp, "    ret\n");
+    } else {
+        fprintf(fp, "    cli\n    hlt\n");
+    }
 
     fclose(fp);
 }
