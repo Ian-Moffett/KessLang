@@ -177,22 +177,31 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
     while (lexer->idx < strlen(buffer) && run && !(lexer->error)) {
         lexer->curChar = buffer[lexer->idx]; 
-        const char C_SYM_ARR[2] = COMMENT_SYM;
-        char COMMENT_SYM_0[2] = {'\0'};
-        COMMENT_SYM_0[0] = C_SYM_ARR[0];
+        const char C_SYM_ARR[2] = COMMENT_SYM;    // Convert comment symbol (index 0) to string.
+        char COMMENT_SYM_0[2] = {'\0'};           // Null terminate.
+        COMMENT_SYM_0[0] = C_SYM_ARR[0];          // Set the value.
 
         if (lexer->curChar == '0' && buffer[lexer->idx + 1] == 'x') {
-            char* hex = kl_lex_get_hex(buffer, lexer);
-            push_token(&lexer->tokenlist, create_token(T_INT, hex, true));
-            skipSpaces = true;
+            /*
+             *
+             *  If there is a value prefixed with '0x' then 
+             *  the lexer will assume it is a hex digit.
+             *  and start grabbing the rest of the digits.
+             */
+            char* hex = kl_lex_get_hex(buffer, lexer);      // Grab the hex digit.
+            push_token(&lexer->tokenlist, create_token(T_INT, hex, true));          // Push hex digit as INT token.
+            skipSpaces = true;                                                      // Skip spaces so we don't get errors.
             ignoreErrors = true;
-            lbidx = 0;
+
+            // Reset buffer.
+            lbidx = 0;  
             lexBuf = (char*)realloc(lexBuf, sizeof(char));
 
         }
 
-        if (kl_lex_isint(lexer->curChar)) { 
+        if (kl_lex_isint(lexer->curChar)) {            
             char* dec = kl_lex_get_int(buffer, lexer);
+            // TODO: Add support for ADD, SUB, DIV, and MUL.
             push_token(&lexer->tokenlist, create_token(T_INT, dec, true));
             skipSpaces = true;
             ignoreErrors = true;
@@ -201,13 +210,14 @@ void tokenize(lexer_t* lexer, char* buffer) {
         }
 
 
-        if (lexer->curChar == VAR_PREFIX[0]) {
+        if (lexer->curChar == VAR_PREFIX[0]) {          // If we see a var prefix, start looking for vars.
             char var_prefix[2] = "\0\0";
             var_prefix[0] = VAR_PREFIX[0];
 
-            push_token(&lexer->tokenlist, create_token(T_VAR_PREFIX, var_prefix, false));
+            push_token(&lexer->tokenlist, create_token(T_VAR_PREFIX, var_prefix, false));         // Push var prefix as token.
             char* symbol = kl_lex_get_var(buffer, lexer);
-            if (symbol[0] < 'a' && symbol[0] > 'z') {
+            // Check variable naming.
+            if (symbol[0] < 'a' && symbol[0] > 'z') {                                   
                 if (symbol[0] != '_' && symbol[0] < 'A' && symbol[0] > 'Z') {
                     kl_log_err("SyntaxError: Invalid naming for variable.", "", lexer->lineNum);
                     lexer->error = true;
@@ -216,6 +226,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
             }
 
             for (int i = 0; i < strlen(symbol); ++i) {
+                // Check variable naming.
                 if (symbol[i] < 'a' && symbol[i] > 'z') {
                     if (symbol[i] != '_' && symbol[i] < 'A' && symbol[i] > 'Z') {
                         kl_log_err("SyntaxError: Invalid character for variable found.", "", lexer->lineNum);
@@ -229,6 +240,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
                 continue;
             }
 
+            // Push symbol and reset everything.
             push_token(&lexer->tokenlist, create_token(T_IDENTIFIER, symbol, true));
             ignoreErrors = true;
             skipSpaces = true;
@@ -240,6 +252,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
         switch (lexer->curChar) {
             case '*':
+                // If we get a '*' we will assume it is a deref operator.
                 push_token(&lexer->tokenlist, create_token(T_DEREF_OP, "*", false));
                 lbidx = 0;
                 lexBuf = (char*)realloc(lexBuf, sizeof(char));
