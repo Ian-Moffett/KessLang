@@ -1,1 +1,4 @@
-stdinc "stdinfo"~
+stdinc (
+    "hello", 
+    "hi"
+)

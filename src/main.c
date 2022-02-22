@@ -86,39 +86,46 @@ int main(int argc, char* argv[]) {
     unsigned int inpstridx = 0;
     bool good = false;
 
-    imports[0] = (char*)calloc(2, sizeof(char));
+    imports[0] = (char*)calloc(1, sizeof(char));
+    char* tmp = (char*)calloc(2, sizeof(char));
+    int tmpidx = 0;
 
     for (int i = 0; i < strlen(buffer); ++i) {
-        while (buffer[i] == ' ' || buffer[i] == '~') {++i;}
-        if (!(good)) { 
-            if (strcmp(imports[importidx], STDINC) == 0) {
-                good = true;
-                memset(imports[importidx], '\0', strlen(imports[importidx]));
-                imports[importidx] = (char*)realloc(imports[importidx], sizeof(char));
-                inpstridx = 0;
-                continue;
-            }
-        }
+        if (!(good)) {
+            tmp[tmpidx] = buffer[i];
+            ++tmpidx;
+            tmp = (char*)realloc(tmp, sizeof(char) * (tmpidx + 2));
 
-        imports[importidx][inpstridx] = buffer[i]; 
-        imports[importidx] = (char*)realloc(imports[importidx], sizeof(char*) * (inpstridx + 2));
-        imports = (char**)realloc(imports, sizeof(char*) * (importidx + 2));
-       
-        if (buffer[i] == '\n') {
-            imports[importidx][inpstridx - 1] = '\0';
+            if (strcmp(tmp, STDINC) == 0) {
+                good = true;
+                free(tmp);
+                tmp = NULL;
+            }
+        } else if (buffer[i] != '(' && buffer[i] != ' ' && buffer[i] != '"' && buffer[i] != ')' && buffer[i] != ',' && buffer[i] != '\n') {
+            imports[importidx][inpstridx] = buffer[i];
+            ++inpstridx;
+            imports[importidx] = (char*)realloc(imports[importidx], sizeof(char) * (inpstridx + 2));
+        } else if (buffer[i] == ')') {
+            break;
+        } else if (buffer[i] == ',') {
+            inpstridx = 0;
             ++importidx;
             imports[importidx] = (char*)calloc(2, sizeof(char));
-            good = false;
-            continue;
-        } else if (buffer[i] == '~') {
-            break;
         }
-
-        ++inpstridx;
     }
-   
+    
+    // Free if stdinc not found.
+    if (!(good)) {
+        ++importidx;
+        free(tmp);
+        tmp = NULL;
+    }
+
     for (int i = 0; i < importidx + 1; ++i) {
         printf("%s\n", imports[i]);
+    }
+
+    for (int i = 0; i < importidx + 1; ++i) {
        free(imports[i]);
     }
 
