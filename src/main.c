@@ -8,6 +8,8 @@
 #include "include/Parser.h"
 #include "include/AST.h"
 #include "include/CodeGen.h"
+#include "../config/Reserved.h"
+
 
 bool codegenError = false;
 char* org = NULL;
@@ -78,6 +80,56 @@ int main(int argc, char* argv[]) {
     fread(buffer, sizeof(char), fsize, fp);
     fclose(fp);
 
+    // Gather imports.
+    char** imports = (char**)malloc(sizeof(char*));
+    unsigned int importidx = 0;
+    unsigned int inpstridx = 0;
+    bool good = false;
+
+    imports[0] = (char*)calloc(2, sizeof(char));
+
+    for (int i = 0; i < strlen(buffer); ++i) {
+        while (buffer[i] == ' ' || buffer[i] == '~') {++i;}
+        if (!(good)) { 
+            if (strcmp(imports[importidx], STDINC) == 0) {
+                good = true;
+                memset(imports[importidx], '\0', strlen(imports[importidx]));
+                imports[importidx] = (char*)realloc(imports[importidx], sizeof(char));
+                inpstridx = 0;
+                continue;
+            }
+        }
+
+        imports[importidx][inpstridx] = buffer[i]; 
+        imports[importidx] = (char*)realloc(imports[importidx], sizeof(char*) * (inpstridx + 2));
+        imports = (char**)realloc(imports, sizeof(char*) * (importidx + 2));
+       
+        if (buffer[i] == '\n') {
+            imports[importidx][inpstridx - 1] = '\0';
+            ++importidx;
+            imports[importidx] = (char*)calloc(2, sizeof(char));
+            good = false;
+            continue;
+        } else if (buffer[i] == '~') {
+            break;
+        }
+
+        ++inpstridx;
+    }
+   
+    for (int i = 0; i < importidx + 1; ++i) {
+        printf("%s\n", imports[i]);
+       free(imports[i]);
+    }
+
+    free(buffer);
+    free(imports);
+    // imports = NULL;
+
+    // printf("%s\n", buffer);
+
+    exit(1);
+
     tokenlist_t tokenlist = {
         .size = 0,
         .tokens = (token_t*)malloc(sizeof(token_t))
@@ -108,13 +160,13 @@ int main(int argc, char* argv[]) {
         free(buffer);
         exit(1);
     }
-    
+   
     kl_cgen_start(parser.ast);
 
     ast_destroy(&parser.ast);
     destroy_tokenlist(&lexer.tokenlist);
     free(buffer);
-
+    
     if (!(codegenError)) {
         if (outputFilename != NULL) {
             char* command;
