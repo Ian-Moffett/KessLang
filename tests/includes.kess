@@ -2,4 +2,4 @@ stdinc (
     "stdinfo"
 )
 
-print "hi";
+print ?test;

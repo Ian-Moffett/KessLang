@@ -183,10 +183,6 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    printf("%s\n", buffer);
-    free(buffer);
-    exit(1);
-
     tokenlist_t tokenlist = {
         .size = 0,
         .tokens = (token_t*)malloc(sizeof(token_t))
