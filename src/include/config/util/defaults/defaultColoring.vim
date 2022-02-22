@@ -1,4 +1,5 @@
 syntax match KessPrint /print/
+syntax match KessStdinc /stdinc/
 syntax match KessStringLit /\v(['"])%(\1@![^\\]|\\.)*\1/
 syntax match KessComment /!!.*/
 syntax match KessVar /\(?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/
@@ -26,6 +27,7 @@ syntax match asmCmp /cmp/
 syntax match KessDeref /\*/
 
 highlight KessPrint ctermfg=220 guifg=#ffd700
+highlight KessStdinc ctermfg=220 guifg=#ffd700
 " highlight KessStringLit ctermfg=99 guifg=#875fff
 highlight KessStringLit ctermfg=85 guifg=#5fffaf
 highlight KessComment ctermfg=245 guifg=#8a8a8a
