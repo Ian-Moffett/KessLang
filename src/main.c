@@ -115,26 +115,76 @@ int main(int argc, char* argv[]) {
     }
     
     // Free if stdinc not found.
-    if (!(good)) {
-        ++importidx;
-        free(tmp);
-        tmp = NULL;
+    free(tmp);
+    tmp = NULL;
+
+    good = false;
+
+    char* newbuffer = (char*)calloc(2, sizeof(char));
+    unsigned long long newBufIdx = 0;
+
+    for (int i = 0; i < strlen(buffer); ++i) {
+        if (buffer[i] == ')' && !(good)) {
+            good = true;
+        } else if (good) {
+            newbuffer[newBufIdx] = buffer[i];
+            ++newBufIdx;
+            newbuffer = (char*)realloc(newbuffer, sizeof(char) * (newBufIdx + 2));
+        }
     }
 
+    free(buffer);
+    buffer = newbuffer;
+
+    bool ioerror = false;
+
     for (int i = 0; i < importidx + 1; ++i) {
-        printf("%s\n", imports[i]);
+        const unsigned int pathsize = strlen("/usr/include/klstd/.kess") + strlen(imports[i]);
+        char path[pathsize];
+
+        sprintf(path, "/usr/include/klstd/%s.kess", imports[i]);
+
+        if (access(path, F_OK) != 0) {
+            printf("\033[93mIOError: stdlibrary file \"%s\" not found.\n\n", imports[i]);
+            ioerror = true;
+            free(buffer);
+
+
+            for (int i = 0; i < importidx + 1; ++i) {
+                free(imports[i]);
+            }
+
+            free(imports);
+            exit(1);
+        }
+
+        FILE* stdfile = fopen(path, "r");
+        fseek(stdfile, 0, SEEK_END);
+        unsigned long long size = ftell(stdfile);
+        fseek(stdfile, 0, SEEK_SET);
+
+        char* stdfileBuf = (char*)calloc(size + (strlen(buffer) + 1), sizeof(char));
+        fread(stdfileBuf, sizeof(char), size, stdfile);
+        strcat(stdfileBuf, buffer);
+        free(buffer);
+        buffer = stdfileBuf;
+        fclose(stdfile);
     }
 
     for (int i = 0; i < importidx + 1; ++i) {
        free(imports[i]);
     }
 
-    free(buffer);
     free(imports);
-    // imports = NULL;
+    imports = NULL;
+    
+    if (ioerror) {
+        free(buffer);
+        exit(1);
+    }
 
-    // printf("%s\n", buffer);
-
+    printf("%s\n", buffer);
+    free(buffer);
     exit(1);
 
     tokenlist_t tokenlist = {
