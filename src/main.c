@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
     char* tmp = (char*)calloc(2, sizeof(char));
     int tmpidx = 0;
 
+    // Get imports.
     for (int i = 0; i < strlen(buffer); ++i) {
         if (!(good)) {
             tmp[tmpidx] = buffer[i];
@@ -100,7 +101,7 @@ int main(int argc, char* argv[]) {
                 good = true;
                 free(tmp);
                 tmp = NULL;
-            }
+            } 
         } else if (buffer[i] != '(' && buffer[i] != ' ' && buffer[i] != '"' && buffer[i] != ')' && buffer[i] != ',' && buffer[i] != '\n') {
             imports[importidx][inpstridx] = buffer[i];
             ++inpstridx;
@@ -113,32 +114,36 @@ int main(int argc, char* argv[]) {
             imports[importidx] = (char*)calloc(2, sizeof(char));
         }
     }
-    
+ 
     // Free if stdinc not found.
     free(tmp);
     tmp = NULL;
 
-    good = false;
-
     char* newbuffer = (char*)calloc(2, sizeof(char));
     unsigned long long newBufIdx = 0;
 
-    for (int i = 0; i < strlen(buffer); ++i) {
-        if (buffer[i] == ')' && !(good)) {
-            good = true;
-        } else if (good) {
+    bool remgood = false;
+
+    // Remove includes from buffer.
+    for (int i = 0; i < strlen(buffer) && good; ++i) {
+        if (buffer[i] == ')' && !(remgood)) {
+            remgood = true;
+        } else if (remgood) {
             newbuffer[newBufIdx] = buffer[i];
             ++newBufIdx;
             newbuffer = (char*)realloc(newbuffer, sizeof(char) * (newBufIdx + 2));
         }
     }
 
-    free(buffer);
-    buffer = newbuffer;
+
+    if (good) {
+        free(buffer);
+        buffer = newbuffer;
+    }
 
     bool ioerror = false;
 
-    for (int i = 0; i < importidx + 1; ++i) {
+    for (int i = 0; i < importidx + 1 && good; ++i) {
         const unsigned int pathsize = strlen("/usr/include/klstd/.kess") + strlen(imports[i]);
         char path[pathsize];
 
@@ -177,7 +182,7 @@ int main(int argc, char* argv[]) {
 
     free(imports);
     imports = NULL;
-    
+     
     if (ioerror) {
         free(buffer);
         exit(1);

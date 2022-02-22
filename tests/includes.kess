@@ -1,5 +1,1 @@
-stdinc (
-    "stdinfo"
-)
-
 print ?test;
