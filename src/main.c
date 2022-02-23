@@ -115,7 +115,6 @@ int main(int argc, char* argv[]) {
         }
     }
  
-    // Free if stdinc not found.
     free(tmp);
     tmp = NULL;
 
@@ -139,6 +138,8 @@ int main(int argc, char* argv[]) {
     if (good) {
         free(buffer);
         buffer = newbuffer;
+    } else {
+        free(newbuffer);
     }
 
     bool ioerror = false;
