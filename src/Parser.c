@@ -5,6 +5,25 @@ static token_t peek(parser_t* parser, unsigned long idx) {
 }
 
 
+static void parser_advance(parser_t* parser) {
+    ++parser->idx;
+    parser->curToken = parser->tokenlist.tokens[parser->idx];
+}
+
+
+bool inFunction = false;
+
+static void usescope(ast_node_t* node, scope_t scope) {
+    if (scope == LOCAL) {
+        node_push_child(node, createChild("SCOPE", "LOCAL", false));
+        inFunction ? node_push_child(node, createChild("INFUNC", "YES", false)) : node_push_child(node, createChild("INFUNC", "NO", false));
+    } else {
+        node_push_child(node, createChild("SCOPE", "GLOBAL", false));
+        inFunction ? node_push_child(node, createChild("INFUNC", "YES", false)) : node_push_child(node, createChild("INFUNC", "NO", false));
+    }
+}
+
+
 void parse(parser_t* parser) { 
     ast_t kl_ast = {
         .size = 0,
@@ -14,11 +33,71 @@ void parse(parser_t* parser) {
     parser->ast = kl_ast;
 
     unsigned long line = 1;
+    scope_t curScope = GLOBAL;
 
     while (parser->idx < parser->tokenlist.size && !(parser->error)) {
         parser->curToken = parser->tokenlist.tokens[parser->idx];
 
         switch (parser->curToken.type) {
+            case T_STR:
+                ast_push_node(&parser->ast, createNode("STR", parser->curToken.tok, false, line));
+                break;
+            case T_FUNC:
+                if (curScope == LOCAL) {
+                    parser->error = true;
+                    kl_log_err("ScopeError: Already in local scope.", "", line);
+                    break;
+                }
+
+                curScope = LOCAL;
+                parser_advance(parser); 
+
+                // TODO: Add regular functions (non asm embeded functions).
+                kl_assert(parser->curToken.type == T_ASM_MACRO, "UnsupportedError: We will add regular functions soon! For now use __asm macro.", parser, PARSER_STAGE, line, "");
+                if (parser->error) {
+                    break;
+                }
+
+
+                parser_advance(parser);
+
+                ast_node_t funcNode = createNode("FUNC", parser->curToken.tok, false, line);
+                node_push_child(&funcNode, createChild("ASM", "YES", false));
+
+                parser_advance(parser);
+                kl_assert(parser->curToken.type == T_LPAREN, "SyntaxError: Expected '(' after function identifier.", parser, PARSER_STAGE, line, "");
+                ast_push_node(&parser->ast, funcNode);
+
+                if (parser->error) {
+                    break;
+                }
+
+                // TODO: When allowing regular functions, change this.
+                kl_assert(parser->curToken.type != T_VAR_PREFIX, "SyntaxError: No arguments allowed for function with __asm marcro (yet).", parser, PARSER_STAGE, line, "");
+
+                if (parser->error) {
+                    break;
+                }
+
+                parser_advance(parser);
+                kl_assert(parser->curToken.type == T_RPAREN, "SyntaxError: Expected ')'.", parser, PARSER_STAGE, line, "");
+                parser_advance(parser);
+                kl_assert(parser->curToken.type == T_LBRACE, "SyntaxError: Expected '{'.", parser, PARSER_STAGE, line, "");
+                break;
+            case T_LBRACE:    // No reason to have a stray brace.
+                parser->error = true;
+                kl_log_err("SyntaxError: Unexpected token found.", "{", line);
+                break;
+            case T_RBRACE:
+                if (curScope != LOCAL) {
+                    parser->error = true;
+                    kl_log_err("SyntaxError: Unexpected token found.", "}", line);
+                } else {
+                    ast_push_node(&parser->ast, createNode("FLAG", "__GLB_SCOPE_START", false, line));
+                    curScope = GLOBAL;
+                }
+
+                break;
             case T_PRINT:
                 if (peek(parser, parser->idx + 1).type != T_VAR_PREFIX && peek(parser, parser->idx + 1).type != T_EOL) {
                     ast_push_node(&parser->ast, createNode("PRINT", peek(parser, parser->idx + 1).tok, false, line));
@@ -53,7 +132,8 @@ void parse(parser_t* parser) {
                             node_push_child(&varNode, createChild("STR", peek(parser, parser->idx + 3).tok, false));
                             break;
                     }
-
+                    
+                    usescope(&varNode, curScope);
                     ast_push_node(&parser->ast, varNode);
                 }
 
@@ -72,6 +152,8 @@ void parse(parser_t* parser) {
                             break;
                     }
 
+
+                    usescope(&derefNode, curScope);
                     ast_push_node(&parser->ast, derefNode);
 
                 } else if (peek(parser, parser->idx + 1).type == T_VAR_PREFIX && peek(parser, parser->idx + 3).type == T_EQUALS_OP && peek(parser, parser->idx + 4).type != T_VAR_PREFIX) {
@@ -84,6 +166,8 @@ void parse(parser_t* parser) {
                         node_push_child(&derefNode, createChild("STR", peek(parser, parser->idx + 4).tok, false));
                     }
 
+
+                    usescope(&derefNode, curScope);
                     ast_push_node(&parser->ast, derefNode);
                 }
 

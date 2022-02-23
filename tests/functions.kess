@@ -1,0 +1,3 @@
+func __asm test() {
+    "mov eax, 1";
+}

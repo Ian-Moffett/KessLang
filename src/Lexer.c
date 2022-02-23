@@ -74,6 +74,32 @@ static char* kl_lex_get_int(char* buffer, lexer_t* lexer) {
 }
 
 
+static char* kl_lex_get_func(char* buffer, lexer_t* lexer) {
+    char* fbuf = (char*)calloc(2, sizeof(char));
+    unsigned int fbidx = 0;
+
+    while (lexer->curChar == ' ' || lexer->curChar == '\t') {         // Skip whitespace.
+        ++lexer->idx;
+        lexer->curChar = buffer[lexer->idx];
+    }
+
+    while (lexer->idx < strlen(buffer)) {
+        lexer->curChar = buffer[lexer->idx];
+
+        if (!(isalpha(lexer->curChar)) && lexer->curChar != '_') { 
+            break;
+        }
+
+        fbuf[fbidx] = lexer->curChar;
+        ++fbidx;
+        fbuf = (char*)realloc(fbuf, sizeof(char) * (fbidx + 2));
+        ++lexer->idx;
+    }
+
+    return fbuf;
+}
+
+
 static char* kl_lex_get_hex(char* buffer, lexer_t* lexer) {
     char* hexBuf = (char*)calloc(2, sizeof(char));
     unsigned int hidx = 0;
@@ -172,6 +198,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
     bool run = true;
     bool ignoreErrors = false;
     bool skipSpaces = false;
+    bool nobufadd = false;
 
     bool semicolonFound = false;
 
@@ -248,9 +275,47 @@ void tokenize(lexer_t* lexer, char* buffer) {
             lbidx = 0;
             lexBuf = (char*)realloc(lexBuf, sizeof(char));
             continue;
+        } else if (lexer->curChar == CALL_PREFIX[0]) { 
+            if (buffer[lexer->idx + 1] == CALL_PREFIX[1]) {
+                ++lexer->idx;
+                lexer->curChar = buffer[lexer->idx];
+                char* identifier = kl_lex_get_func(buffer, lexer);
+                printf("%s\n", identifier);
+                exit(1);
+            }
         }
 
         switch (lexer->curChar) {
+            case ',':
+                push_token(&lexer->tokenlist, create_token(T_COMMA, ",", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
+            case '{':
+                push_token(&lexer->tokenlist, create_token(T_LBRACE, "{", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
+            case '}':
+                push_token(&lexer->tokenlist, create_token(T_RBRACE, "}", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
+            case '(':
+                push_token(&lexer->tokenlist, create_token(T_LPAREN, "(", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
+            case ')':
+                push_token(&lexer->tokenlist, create_token(T_RPAREN, ")", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
             case '*':
                 // If we get a '*' we will assume it is a deref operator.
                 push_token(&lexer->tokenlist, create_token(T_DEREF_OP, "*", false));
@@ -280,18 +345,43 @@ void tokenize(lexer_t* lexer, char* buffer) {
             case ' ':
                 {
                     bool invalidTok = true;     // Will be false if token is found.
-                    
+
                     // Token adding & checking.
 
                     if (strcmp(lexBuf, IO_PRINT_STATEMENT) == 0) { 
-                        push_token(&lexer->tokenlist, create_token(T_PRINT, "print", false));
+                        push_token(&lexer->tokenlist, create_token(T_PRINT, IO_PRINT_STATEMENT, false));
                         invalidTok = false;
+                    } else if (strcmp(lexBuf, FUNC_DEF) == 0) {
+                        push_token(&lexer->tokenlist, create_token(T_FUNC, FUNC_DEF, false));
+                        invalidTok = false; 
+
+                        char* key = kl_lex_get_func(buffer, lexer);
+    
+                        if (strcmp(key, ASM_MACRO) == 0) {
+                            push_token(&lexer->tokenlist, create_token(T_ASM_MACRO, ASM_MACRO, false));
+                            free(key);
+                            key = kl_lex_get_func(buffer, lexer);
+                            push_token(&lexer->tokenlist, create_token(T_IDENTIFIER, key, true));
+
+                            lbidx = 0;
+                            memset(lexBuf, '\0', strlen(lexBuf));
+                            lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                            continue;
+                        } else {
+                            push_token(&lexer->tokenlist, create_token(T_IDENTIFIER, key, true));
+
+                            lbidx = 0;
+                            memset(lexBuf, '\0', strlen(lexBuf));
+                            lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                            break;
+                        }
                     } else {
                         bool nonSpace = false;
-
                         for (int i = 0; i < strlen(lexBuf); ++i) {
                             if (lexBuf[i] != ' ') {
                                 nonSpace = true;
+                            } else if (lexBuf[i] == '(' && lexBuf[i + 1] == ')') {
+                                break;
                             }
                         }
 
@@ -346,9 +436,14 @@ void tokenize(lexer_t* lexer, char* buffer) {
                 break;
         }
 
-        lexBuf[lbidx] = lexer->curChar;
-        ++lbidx;
-        lexBuf = (char*)realloc(lexBuf, sizeof(char) * (lbidx + 2));
+        if (!(nobufadd)) {
+            lexBuf[lbidx] = lexer->curChar;
+            ++lbidx;
+            lexBuf = (char*)realloc(lexBuf, sizeof(char) * (lbidx + 2));
+        } else {
+            nobufadd = false;
+        }
+
         ++lexer->idx;
     }
 

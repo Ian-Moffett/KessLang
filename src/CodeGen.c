@@ -26,8 +26,9 @@ void kl_cgen_start(ast_t ast) {
     section_t curSection = CODE_SEC;
 
     unsigned long sidx = 0;
-
     unsigned long curLabel = 0;
+
+    func_t curFunction = FUNC_NONE;
 
     if (access("/tmp/__KL_SOURCE.S", F_OK) == 0) {
         remove("/tmp/__KL_SOURCE.S");
@@ -55,17 +56,22 @@ void kl_cgen_start(ast_t ast) {
     fprintf(fp, "_start: jmp _%d\n\n", curLabel);
 
     unsigned long varCount = 0;
+    unsigned long funcCount = 0;
 
     for (int i = 0; i < ast.size; ++i) {
         if (strcmp(ast.nodes[i].key, "VAR") == 0) {
             ++varCount;
+        } else if (strcmp(ast.nodes[i].key, "FUNC") == 0) {
+            ++funcCount;
         }
     }
 
     const unsigned long nVarArrSz = varCount;
+    const unsigned long nFuncArrSize = funcCount;
 
     const char* numericVars[nVarArrSz];
     const char* vars[nVarArrSz];
+    const char* functions[nFuncArrSize];
 
     for (int i = 0; i < nVarArrSz; ++i) {
         numericVars[i] = NULL;
@@ -238,6 +244,32 @@ void kl_cgen_start(ast_t ast) {
             ++curLabel;
             fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
             fprintf(fp, "    mov [ebx], byte \"%s\"\n\n", curNode.children[0].value);
+        } else if (strcmp(curNode.key, "FUNC") == 0) {
+            // TODO: Add handling for regular functions when that gets added.
+            curFunction = FUNC_REG;
+    
+            if (curSection != CODE_SEC) {
+                fprintf(fp, "section .text\n");
+            }
+
+            fprintf(fp, "_%d:\n", curLabel);
+            fprintf(fp, "    jmp _%d\n\n", curLabel + 1);
+            ++curLabel;
+            fprintf(fp, "f_%s:\n", curNode.value);
+
+            for (int j = i; j < ast.size; ++j, ++i) {
+                curNode = ast.nodes[j];
+                if (strcmp(curNode.key, "STR") == 0) {
+                    fprintf(fp, "    %s\n", curNode.value);
+                } else if (strcmp(curNode.value, "__GLB_SCOPE_START") == 0) {
+                    curFunction = FUNC_NONE;
+                    break;
+                }
+
+                continue;
+            }
+
+            fprintf(fp, "\n");
         }
     }
     

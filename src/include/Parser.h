@@ -5,6 +5,8 @@
 #include "AST.h"
 #include "Debugger.h"
 #include "util/kl_assert.h"
+#include "util/Scope.h"
+#include "../../config/Reserved.h"
 #include <stdbool.h>
 #include <limits.h>
 

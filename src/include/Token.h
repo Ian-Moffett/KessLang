@@ -17,6 +17,14 @@ typedef enum {
     T_DEREF_OP,
     T_ASM_START,
     T_ASM_END,
+    T_FUNC,
+    T_LPAREN,
+    T_RPAREN,
+    T_ASM_MACRO,
+    T_LBRACE,
+    T_RBRACE,
+    T_COMMA,
+    T_FUNCTION_CALL,
 } tokentype_t;
 
 

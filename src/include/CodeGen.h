@@ -16,6 +16,13 @@ typedef enum {
 } section_t;
 
 
+typedef enum {
+    FUNC_REG,
+    FUNC_ASM,
+    FUNC_NONE,
+} func_t;
+
+
 void kl_cgen_start(ast_t ast);
 
 
