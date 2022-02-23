@@ -78,6 +78,10 @@ void kl_cgen_start(ast_t ast) {
         vars[i] = NULL;
     }
 
+    for (int i = 0; i < nFuncArrSize; ++i) {
+        functions[i] = NULL;
+    }
+
     for (int i = 0; i < ast.size && !(codegenError); ++i) {
         curNode = ast.nodes[i];
 
@@ -247,9 +251,16 @@ void kl_cgen_start(ast_t ast) {
         } else if (strcmp(curNode.key, "FUNC") == 0) {
             // TODO: Add handling for regular functions when that gets added.
             curFunction = FUNC_REG;
+
+            if (functions[hashmap_hash(curNode.value, nFuncArrSize)]) {                
+                kl_log_err("SymbolError: Defined the same function twice!", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
     
             if (curSection != CODE_SEC) {
                 fprintf(fp, "section .text\n");
+                curSection = CODE_SEC;
             }
 
             fprintf(fp, "_%d:\n", curLabel);
@@ -269,9 +280,25 @@ void kl_cgen_start(ast_t ast) {
                 continue;
             }
 
-            fprintf(fp, "\n");
+            fprintf(fp, "    ret\n\n");
+            functions[hashmap_hash(curNode.value, nFuncArrSize)] = curNode.value;
+        } else if (strcmp(curNode.key, "CALL") == 0) {
+            if (!(functions[hashmap_hash(curNode.value, nFuncArrSize)])) {                
+                kl_log_err("SymbolError: No function by that name.", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
+
+            if (curSection != CODE_SEC) {
+                fprintf(fp, "section .text\n");
+                curSection = CODE_SEC;
+            }
+
+            fprintf(fp, "_%d:\n", curLabel);
+            fprintf(fp, "    call f_%s\n\n", curNode.value);
+            ++curLabel;
         }
-    }
+    } 
     
     // END OF CODE (SYS_EXIT).
     if (curSection != CODE_SEC) {

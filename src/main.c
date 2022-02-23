@@ -259,4 +259,8 @@ int main(int argc, char* argv[]) {
     if (!(pureAsm)) {
         remove("/tmp/__KL_SOURCE.S");
     }
+
+    if (access("/tmp/__KL_SOURCE.S", F_OK) == 0) {
+        remove("/tmp/__KL_SOURCE.S");
+    }
 }

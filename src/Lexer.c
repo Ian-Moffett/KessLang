@@ -277,11 +277,10 @@ void tokenize(lexer_t* lexer, char* buffer) {
             continue;
         } else if (lexer->curChar == CALL_PREFIX[0]) { 
             if (buffer[lexer->idx + 1] == CALL_PREFIX[1]) {
-                ++lexer->idx;
+                lexer->idx += 2;
                 lexer->curChar = buffer[lexer->idx];
                 char* identifier = kl_lex_get_func(buffer, lexer);
-                printf("%s\n", identifier);
-                exit(1);
+                push_token(&lexer->tokenlist, create_token(T_FUNCTION_CALL, identifier, true));
             }
         }
 

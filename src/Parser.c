@@ -39,6 +39,9 @@ void parse(parser_t* parser) {
         parser->curToken = parser->tokenlist.tokens[parser->idx];
 
         switch (parser->curToken.type) {
+            case T_FUNCTION_CALL:
+                ast_push_node(&parser->ast, createNode("CALL", parser->curToken.tok, false, line));
+                break;
             case T_STR:
                 ast_push_node(&parser->ast, createNode("STR", parser->curToken.tok, false, line));
                 break;
