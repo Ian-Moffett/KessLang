@@ -1,11 +1,11 @@
 #include "include/Parser.h"
 
-static token_t peek(parser_t* parser, unsigned long idx) {
+static inline token_t peek(parser_t* parser, unsigned long idx) {
     return parser->tokenlist.tokens[idx];
 }
 
 
-static void parser_advance(parser_t* parser) {
+static inline void parser_advance(parser_t* parser) {
     ++parser->idx;
     parser->curToken = parser->tokenlist.tokens[parser->idx];
 }
@@ -13,7 +13,7 @@ static void parser_advance(parser_t* parser) {
 
 bool inFunction = false;
 
-static void usescope(ast_node_t* node, scope_t scope) {
+static inline void usescope(ast_node_t* node, scope_t scope) {
     if (scope == LOCAL) {
         node_push_child(node, createChild("SCOPE", "LOCAL", false));
         inFunction ? node_push_child(node, createChild("INFUNC", "YES", false)) : node_push_child(node, createChild("INFUNC", "NO", false));
@@ -24,7 +24,7 @@ static void usescope(ast_node_t* node, scope_t scope) {
 }
 
 
-void parse(parser_t* parser) { 
+inline void parse(parser_t* parser) { 
     ast_t kl_ast = {
         .size = 0,
         .nodes = (ast_node_t*)malloc(sizeof(ast_node_t)),
@@ -105,7 +105,38 @@ void parse(parser_t* parser) {
                 if (peek(parser, parser->idx + 1).type != T_VAR_PREFIX && peek(parser, parser->idx + 1).type != T_EOL) {
                     ast_push_node(&parser->ast, createNode("PRINT", peek(parser, parser->idx + 1).tok, false, line));
                 } else if (peek(parser, parser->idx + 1).type == T_VAR_PREFIX) {
-                    ast_push_node(&parser->ast, createNode("VAR_PRINT", peek(parser, parser->idx + 2).tok, false, line));
+                    unsigned char attr = 0x0;
+                    const unsigned char ATTR_INDEXOF = 0x1;
+
+                    ast_node_t printNode;
+
+                    if (peek(parser, parser->idx + 3).type == T_LSQR_BRACKET) {
+                        printNode = createNode("VAR_PRINT", peek(parser, parser->idx + 2).tok, false, line);
+                        kl_assert(peek(parser, parser->idx + 4).type == T_INT, "SyntaxError: Expected integer after '['", parser, PARSER_STAGE, line, "");
+
+                        if (parser->error) {
+                            break;
+                        }
+
+                        kl_assert(peek(parser, parser->idx + 5).type == T_RSQR_BRACKET, "SyntaxError: Expected ']'.", parser, PARSER_STAGE, line, "");
+
+                        if (parser->error) {
+                            break;
+                        }
+
+                        attr |= ATTR_INDEXOF;
+                    } else {
+                        printNode = createNode("VAR_PRINT", peek(parser, parser->idx + 2).tok, false, line);
+                    }
+
+                    if (!(attr & 0xFF)) {
+                        node_push_child(&printNode, createChild("ATTR", "NONE", false));
+                    } else if (attr & ATTR_INDEXOF) {
+                        node_push_child(&printNode, createChild("ATTR", "INDEXOF", false));
+                        node_push_child(&printNode, createChild("INDEXOF", peek(parser, parser->idx + 4).tok, false));
+                    }
+
+                    ast_push_node(&parser->ast, printNode);
                 }
 
                 break;

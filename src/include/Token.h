@@ -25,6 +25,8 @@ typedef enum {
     T_RBRACE,
     T_COMMA,
     T_FUNCTION_CALL,
+    T_LSQR_BRACKET,
+    T_RSQR_BRACKET,
 } tokentype_t;
 
 

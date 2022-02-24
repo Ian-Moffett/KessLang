@@ -66,6 +66,7 @@ static char* kl_lex_get_int(char* buffer, lexer_t* lexer) {
                 case '\n':
                 case '\0':
                 case ';':
+                case ']':
                     end = true;
                     break;
             }
@@ -152,7 +153,7 @@ static char* kl_lex_get_hex(char* buffer, lexer_t* lexer) {
 }
 
 
-static char* kl_lex_get_var(char* buffer, lexer_t* lexer) {
+static char* kl_lex_get_var(char* buffer, lexer_t* lexer, bool* indexof) {
     char* varBuf = (char*)calloc(2, sizeof(char));
     unsigned int vbidx = 0;
     bool run = true;
@@ -162,6 +163,8 @@ static char* kl_lex_get_var(char* buffer, lexer_t* lexer) {
         lexer->curChar = buffer[lexer->idx];
 
         switch (lexer->curChar) {
+            case '[':
+                *indexof = true;
             case ';':
                 --lexer->idx;
                 lexer->curChar = ';';
@@ -243,7 +246,7 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
         }
 
-        if (kl_lex_isint(lexer->curChar)) {            
+        if (kl_lex_isint(lexer->curChar)) {
             char* dec = kl_lex_get_int(buffer, lexer);
             // TODO: Add support for ADD, SUB, DIV, and MUL.
             push_token(&lexer->tokenlist, create_token(T_INT, dec, true));
@@ -264,7 +267,8 @@ void tokenize(lexer_t* lexer, char* buffer) {
             var_prefix[0] = VAR_PREFIX[0];
 
             push_token(&lexer->tokenlist, create_token(T_VAR_PREFIX, var_prefix, false));         // Push var prefix as token.
-            char* symbol = kl_lex_get_var(buffer, lexer);
+            bool indexof = false;
+            char* symbol = kl_lex_get_var(buffer, lexer, &indexof);
 
             // Check variable naming.
             if (!(isalpha(symbol[0]))) {                                   
@@ -277,11 +281,11 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
             for (int i = 0; i < strlen(symbol); ++i) {
                 // Check variable naming.
-                if (!(isalpha(symbol[i])) && symbol[i] != '_') {
+                if (!(isalpha(symbol[i])) && symbol[i] != '_' && symbol[i] != '[' && symbol[i] != ']' && !(kl_lex_isint(symbol[i]))) {
                     kl_log_err("SyntaxError: Invalid character for variable found.", "", lexer->lineNum);
                     lexer->error = true;
                     break;
-                } 
+                }
             }
 
             if (lexer->error) {
@@ -295,7 +299,12 @@ void tokenize(lexer_t* lexer, char* buffer) {
             ++lexer->idx;
             lbidx = 0;
             lexBuf = (char*)realloc(lexBuf, sizeof(char));
-            continue;
+            lexer->curChar = buffer[lexer->idx];
+
+            if (indexof) {
+                // push_token(&lexer->tokenlist, create_token(T_LSQR_BRACKET, "[", false));
+            }
+
         } else if (lexer->curChar == CALL_PREFIX[0]) { 
             if (buffer[lexer->idx + 1] == CALL_PREFIX[1]) {
                 lexer->idx += 2;
@@ -306,6 +315,18 @@ void tokenize(lexer_t* lexer, char* buffer) {
         }
 
         switch (lexer->curChar) {
+            case '[':
+                push_token(&lexer->tokenlist, create_token(T_LSQR_BRACKET, "[", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
+            case ']':
+                push_token(&lexer->tokenlist, create_token(T_RSQR_BRACKET, "]", false));
+                lbidx = 0;
+                lexBuf = (char*)realloc(lexBuf, sizeof(char));
+                ++lexer->idx;
+                continue;
             case ',':
                 push_token(&lexer->tokenlist, create_token(T_COMMA, ",", false));
                 lbidx = 0;

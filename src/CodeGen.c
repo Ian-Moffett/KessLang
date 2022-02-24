@@ -235,6 +235,20 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "_%d: jmp _%d\n\n", curLabel, curLabel + 2);
             ++curLabel;
 
+            if (strcmp(curNode.children[0].value, "INDEXOF") == 0) {
+                char message[200];
+                sprintf(message, "MemoryError: Bro.. the size of the string is %d and you are trying to access index %d.", strlen(value2Print), atoi(curNode.children[1].value));
+                if (atoi(curNode.children[1].value) > strlen(value2Print) || atoi(curNode.children[1].value) < 0) {
+                    kl_log_err(message, "", curNode.lineNumber);
+                    codegenError = true;
+                    break;
+                }
+
+                char valSec[2] = "\0\0";
+                valSec[0] = value2Print[atoi(curNode.children[1].value)];
+                value2Print = valSec;
+            }
+
             fprintf(fp, "section .data\n");
             fprintf(fp, "_%d: db \"%s\", 0xA\n\n", curLabel, value2Print);
             ++curLabel;
