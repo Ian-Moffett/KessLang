@@ -265,9 +265,10 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
             push_token(&lexer->tokenlist, create_token(T_VAR_PREFIX, var_prefix, false));         // Push var prefix as token.
             char* symbol = kl_lex_get_var(buffer, lexer);
+
             // Check variable naming.
-            if (symbol[0] < 'a' && symbol[0] > 'z') {                                   
-                if (symbol[0] != '_' && symbol[0] < 'A' && symbol[0] > 'Z') {
+            if (!(isalpha(symbol[0]))) {                                   
+                if (symbol[0] != '_' && !(isalpha(symbol[0]))) {
                     kl_log_err("SyntaxError: Invalid naming for variable.", "", lexer->lineNum);
                     lexer->error = true;
                     break;
@@ -276,12 +277,10 @@ void tokenize(lexer_t* lexer, char* buffer) {
 
             for (int i = 0; i < strlen(symbol); ++i) {
                 // Check variable naming.
-                if (symbol[i] < 'a' && symbol[i] > 'z') {
-                    if (symbol[i] != '_' && symbol[i] < 'A' && symbol[i] > 'Z') {
-                        kl_log_err("SyntaxError: Invalid character for variable found.", "", lexer->lineNum);
-                        lexer->error = true;
-                        break;
-                    }
+                if (!(isalpha(symbol[i])) && symbol[i] != '_') {
+                    kl_log_err("SyntaxError: Invalid character for variable found.", "", lexer->lineNum);
+                    lexer->error = true;
+                    break;
                 } 
             }
 
