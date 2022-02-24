@@ -74,6 +74,7 @@ void kl_cgen_start(ast_t ast) {
 
     for (int i = 0; i < nVarArrSz; ++i) {
         vars[i].used = false;
+        vars[i].count = 1;
     }
 
     for (int i = 0; i < nFuncArrSize; ++i) {
@@ -117,14 +118,6 @@ void kl_cgen_start(ast_t ast) {
              *  curNode.children[0].value
              */
 
-            if (strcmp(curNode.children[0].key, "INT") == 0) {
-                if (vars[hashmap_hash(curNode.value, nVarArrSz)].used) {
-                    kl_log_err("SymbolError: Double symbol refrence's are not supported yet, coming soon..", curNode.value, curNode.lineNumber);
-                    codegenError = true;
-                    break;
-                }
-            }
-
             if (codegenError) {
                 break;
             }
@@ -143,20 +136,35 @@ void kl_cgen_start(ast_t ast) {
 
             if (strcmp(curNode.children[0].key, "STR") != 0) {
                 fprintf(fp, "section .bss\n");
-            } else {
+            } else if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used)) {
                 curSection = DATA_SEC;
                 fprintf(fp, "section .data\n");
                 fprintf(fp, "%s: db \"%s\"\n\n", curNode.value, curNode.children[0].value);
+            } else {
+                curSection = DATA_SEC;
+                fprintf(fp, "section .data\n");
+                fprintf(fp, "%s_%d: db \"%s\"\n\n", curNode.value, vars[hashmap_hash(curNode.value, nVarArrSz)].count, curNode.children[0].value);
             }
 
             if (strcmp(curNode.children[0].key, "INT") == 0) {
-                fprintf(fp, "%s: resb 4\n\n", curNode.value);
-                curSection = CODE_SEC;
-                fprintf(fp, "section .text\n");
-                fprintf(fp, "_%d:\n", curLabel);
-                ++curLabel;
+                if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used)) {
+                    fprintf(fp, "%s: resb 4\n\n", curNode.value);
+                    curSection = CODE_SEC;
+                    fprintf(fp, "section .text\n");
+                    fprintf(fp, "_%d:\n", curLabel);
+                    ++curLabel;
 
-                fprintf(fp, "    mov [%s], dword %s   ; Stored in executable to use special runtime operations against var. \n\n", curNode.value, curNode.children[0].value);
+                    fprintf(fp, "    mov [%s], dword %s   ; Stored in executable to use special runtime operations against var. \n\n", curNode.value, curNode.children[0].value);
+                } else {
+                    fprintf(fp, "%s_%d: resb 4\n\n", curNode.value, vars[hashmap_hash(curNode.value, nVarArrSz)].count);
+                    curSection = CODE_SEC;
+                    fprintf(fp, "section .text\n");
+                    fprintf(fp, "_%d:\n", curLabel);
+                    ++curLabel;
+
+                    fprintf(fp, "    mov [%s_%d], dword %s   ; Stored in executable to use special runtime operations against var. \n\n", curNode.value, vars[hashmap_hash(curNode.value, nVarArrSz)].count, curNode.children[0].value);
+                    ++vars[hashmap_hash(curNode.value, nVarArrSz)].count;
+                }
                 
             }
             
@@ -191,8 +199,6 @@ void kl_cgen_start(ast_t ast) {
                 break;
             }
 
-
-            // TODO: Turn this into a hashmap.
 
             const char* value2Print = vars[hashmap_hash(curNode.value, nVarArrSz)].strVal; 
 

@@ -10,6 +10,7 @@ typedef struct {
     ssize_t numericVal;
     bool used;
     bool constant;
+    int count;
 } var_t;
 
 
