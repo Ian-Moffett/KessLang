@@ -1,5 +1,8 @@
 syntax match KessPrint /print/
 syntax match KessStdinc /stdinc/
+syntax match asmMacro /__asm/
+syntax match KessFuncPrefix /f>/
+syntax match KessFunc /func/
 syntax match KessStringLit /\v(['"])%(\1@![^\\]|\\.)*\1/
 syntax match KessComment /!!.*/
 syntax match KessVar /\(?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/
@@ -28,6 +31,7 @@ syntax match KessDeref /\*/
 
 highlight KessPrint ctermfg=220 guifg=#ffd700
 highlight KessStdinc ctermfg=220 guifg=#ffd700
+highlight KessFunc ctermfg=220 guifg=#ffd700
 " highlight KessStringLit ctermfg=99 guifg=#875fff
 highlight KessStringLit ctermfg=85 guifg=#5fffaf
 highlight KessComment ctermfg=245 guifg=#8a8a8a
@@ -36,6 +40,8 @@ highlight KessInt ctermfg=205 guifg=#ff5faf
 highlight KessHex ctermfg=205 guifg=#ff5faf
 highlight KessAssignment ctermfg=223 guifg=#ffd7af
 highlight asmStart ctermfg=104 guifg=#8787d7  
+highlight asmMacro ctermfg=104 guifg=#8787d7  
+highlight asmMov ctermfg=104 guifg=#8787d7  
 highlight asmEnd ctermfg=104 guifg=#8787d7  
 highlight asmMov ctermfg=79 guifg=#5fd7af
 highlight asmOr ctermfg=79 guifg=#5fd7af
@@ -53,3 +59,4 @@ highlight asmEbp ctermfg=209 guifg=#ff875f
 highlight asmEdi ctermfg=209 guifg=#ff875f
 highlight asmEsi ctermfg=209 guifg=#ff875f
 highlight KessDeref ctermfg=167 guifg=#d75f5f
+highlight KessFuncPrefix ctermfg=220 guifg=#d787ff

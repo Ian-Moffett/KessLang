@@ -13,6 +13,9 @@ with open("../Reserved.h", "r") as reserved:
     var_prefix = re.findall(r"(?<=VAR_PREFIX)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
     deref_op = re.findall(r"(?<=DEREF_OP)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
     stdinc = re.findall(r"(?<=STDINC)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
+    func_def = re.findall(r"(?<=FUNC_DEF)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
+    call_prefix = re.findall(r"(?<=CALL_PREFIX)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
+    asmmacro = re.findall(r"(?<=ASM_MACRO)\s+\".*\"", contents)[0].strip(' ').strip('"').replace('/', "\\/");
 
     if ' ' in print_statement or ' ' in comment_sym:
         print("KEYWORD_HEADER FORMAT ERROR!\n\nMake sure there are no spaces, speical character etc.")
@@ -38,6 +41,9 @@ with open("../Reserved.h", "r") as reserved:
         var_find = r"/\(^?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/".replace('?', var_prefix);
         defaultsrepl = defaultsrepl.replace("/\(^?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/", var_find);
         defaultsrepl = defaultsrepl.replace("stdinc", stdinc)                                              
+        defaultsrepl = defaultsrepl.replace("func", func_def)
+        defaultsrepl = defaultsrepl.replace("f>", call_prefix)
+        defaultsrepl = defaultsrepl.replace("__asm", asmmacro)
     
     with open(f"{home_dir}/.config/nvim/syntax/kesslang.vim", "w") as syntaxfile:
         syntaxfile.write(defaultsrepl)
