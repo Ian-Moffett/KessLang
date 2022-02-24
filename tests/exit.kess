@@ -1,0 +1,6 @@
+stdinc (
+    "signal"
+)
+
+f>exit_ok
+print "Hello!";
