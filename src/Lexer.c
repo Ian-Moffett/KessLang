@@ -60,7 +60,24 @@ static char* kl_lex_get_int(char* buffer, lexer_t* lexer) {
         lexer->curChar = buffer[lexer->idx];
 
         if (!(kl_lex_isint(lexer->curChar))) {
-            break;
+            bool end = false;
+            switch (lexer->curChar) {
+                case '=':
+                case '\n':
+                case '\0':
+                case ';':
+                    end = true;
+                    break;
+            }
+
+            if (end) {
+                break;
+            } else {
+                intBuf[ibidx] = lexer->curChar;
+                ++ibidx;
+                lexer->error = true;
+                kl_log_err("TokenError: Invalid token found while lexing.", intBuf, lexer->lineNum);
+            }
         }
 
         intBuf[ibidx] = lexer->curChar;
@@ -230,6 +247,11 @@ void tokenize(lexer_t* lexer, char* buffer) {
             char* dec = kl_lex_get_int(buffer, lexer);
             // TODO: Add support for ADD, SUB, DIV, and MUL.
             push_token(&lexer->tokenlist, create_token(T_INT, dec, true));
+
+            if (lexer->error) {
+                break;
+            }
+
             skipSpaces = true;
             ignoreErrors = true;
             lbidx = 0;
