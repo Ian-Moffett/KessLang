@@ -1,0 +1,11 @@
+func __asm exit_ok() {
+    "mov eax, 1";
+    "mov ebx, 0";
+    "int 0x80";
+}
+
+func __asm exit_err() {
+    "mov eax, 1";
+    "mov ebx, 1";
+    "int 0x80";
+}
