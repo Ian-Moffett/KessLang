@@ -17,7 +17,7 @@ typedef enum {
 
 
 typedef enum {
-    FUNC_REG,
+    FUNC_REG,       // Regular.
     FUNC_ASM,
     FUNC_NONE,
 } func_t;

@@ -69,17 +69,16 @@ void kl_cgen_start(ast_t ast) {
     const unsigned long nVarArrSz = varCount;
     const unsigned long nFuncArrSize = funcCount;
 
-    const char* numericVars[nVarArrSz];
-    const char* vars[nVarArrSz];
-    const char* functions[nFuncArrSize];
+    var_t vars[nVarArrSz];
+    function_t functions[nFuncArrSize];
 
     for (int i = 0; i < nVarArrSz; ++i) {
-        numericVars[i] = NULL;
-        vars[i] = NULL;
+        vars[i].used = false;
     }
 
     for (int i = 0; i < nFuncArrSize; ++i) {
-        functions[i] = NULL;
+        functions[i].used = false;
+        functions[i].assembly = false;
     }
 
     for (int i = 0; i < ast.size && !(codegenError); ++i) {
@@ -119,7 +118,7 @@ void kl_cgen_start(ast_t ast) {
              */
 
             if (strcmp(curNode.children[0].key, "INT") == 0) {
-                if (numericVars[hashmap_hash(curNode.value, nVarArrSz)] != NULL) {
+                if (vars[hashmap_hash(curNode.value, nVarArrSz)].used) {
                     kl_log_err("SymbolError: Double symbol refrence's are not supported yet, coming soon..", curNode.value, curNode.lineNumber);
                     codegenError = true;
                     break;
@@ -162,21 +161,28 @@ void kl_cgen_start(ast_t ast) {
             }
             
             if (strcmp(curNode.children[0].key, "INT") == 0) {
-                numericVars[hashmap_hash(curNode.value, nVarArrSz)] = curNode.children[0].value;
+                vars[hashmap_hash(curNode.value, nVarArrSz)].strVal = curNode.children[0].value;
+                vars[hashmap_hash(curNode.value, nVarArrSz)].numericVal = atoi(curNode.children[0].value);
+                vars[hashmap_hash(curNode.value, nVarArrSz)].isNumeric = true;
             } else {
-                vars[hashmap_hash(curNode.value, nVarArrSz)] = curNode.children[0].value;
+                vars[hashmap_hash(curNode.value, nVarArrSz)].strVal = curNode.children[0].value;
+                vars[hashmap_hash(curNode.value, nVarArrSz)].isNumeric = false;
             }
+
+
+            vars[hashmap_hash(curNode.value, nVarArrSz)].used = true;
         } else if (strcmp(curNode.key, "VAR_PRINT") == 0) {
             bool varFound = false;
             bool numeric = false;
 
             if (nVarArrSz != 0) {
-                if (vars[hashmap_hash(curNode.value, nVarArrSz)] != NULL) {
+                if (vars[hashmap_hash(curNode.value, nVarArrSz)].used) {
+                    if (vars[hashmap_hash(curNode.value, nVarArrSz)].isNumeric) {
+                        numeric = true;
+                    }
+
                     varFound = true;
-                } else if (numericVars[hashmap_hash(curNode.value, nVarArrSz)] != NULL) {
-                    varFound = true;
-                    numeric = true;
-                }
+                } 
             }
 
             if (!(varFound)) {
@@ -188,13 +194,7 @@ void kl_cgen_start(ast_t ast) {
 
             // TODO: Turn this into a hashmap.
 
-            const char* value2Print;
-
-            if (numeric) {
-                value2Print = numericVars[hashmap_hash(curNode.value, nVarArrSz)];
-            } else {
-                value2Print = vars[hashmap_hash(curNode.value, nVarArrSz)];
-            }
+            const char* value2Print = vars[hashmap_hash(curNode.value, nVarArrSz)].strVal; 
 
             if (curSection != CODE_SEC) {
                 curSection = CODE_SEC;
@@ -227,7 +227,7 @@ void kl_cgen_start(ast_t ast) {
             ++curLabel;
             fprintf(fp, "    mov [%s], byte \"%s\"\n\n", curNode.value, curNode.children[0].value);            
         } else if (strcmp(curNode.key, "DEREF_VAR") == 0) {
-            if (!(numericVars[hashmap_hash(curNode.value, nVarArrSz)]) || nVarArrSz == 0) {
+            if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used) || nVarArrSz == 0) {
                 kl_log_err("SymbolError: No dereferenceable variable by that name.", curNode.value, curNode.lineNumber);
                 codegenError = true;
                 break;
@@ -250,9 +250,9 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "    mov [ebx], byte \"%s\"\n\n", curNode.children[0].value);
         } else if (strcmp(curNode.key, "FUNC") == 0) {
             // TODO: Add handling for regular functions when that gets added.
-            curFunction = FUNC_REG;
+            curFunction = FUNC_ASM;
 
-            if (functions[hashmap_hash(curNode.value, nFuncArrSize)]) {                
+            if (functions[hashmap_hash(curNode.value, nFuncArrSize)].used) {                
                 kl_log_err("SymbolError: Defined the same function twice!", curNode.value, curNode.lineNumber);
                 codegenError = true;
                 break;
@@ -281,9 +281,9 @@ void kl_cgen_start(ast_t ast) {
             }
 
             fprintf(fp, "    ret\n\n");
-            functions[hashmap_hash(curNode.value, nFuncArrSize)] = curNode.value;
+            functions[hashmap_hash(curNode.value, nFuncArrSize)].used = true;
         } else if (strcmp(curNode.key, "CALL") == 0) {
-            if (!(functions[hashmap_hash(curNode.value, nFuncArrSize)])) {                
+            if (!(functions[hashmap_hash(curNode.value, nFuncArrSize)].used)) {                
                 kl_log_err("SymbolError: No function by that name.", curNode.value, curNode.lineNumber);
                 codegenError = true;
                 break;

@@ -1,1 +1,4 @@
-print "Hello, World!";
+stdinc ("signal")
+
+f>exit_ok
+print "Will this be printed?"
