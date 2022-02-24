@@ -5,7 +5,7 @@ syntax match KessFuncPrefix /f>.*/
 syntax match KessFunc /func/
 syntax match KessStringLit /\v(['"])%(\1@![^\\]|\\.)*\1/
 syntax match KessComment /!!.*/
-syntax match KessVar /\(?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/
+syntax match KessVar /\(?&\?\([a-zA-Z]\|_\)\w\+\|^?[A-Za-z]\{1}\)/
 syntax match KessInt /[0-9]\+/
 syntax match KessHex /0\(x\|X\)[0-9A-Fa-f]/
 syntax match KessAssignment /=/

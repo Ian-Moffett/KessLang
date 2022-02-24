@@ -113,7 +113,25 @@ void parse(parser_t* parser) {
                 ast_node_t varNode;
 
                 {
+                    unsigned char attr = 0x0;
+                    const unsigned char ATTR_CONST = 0x1;
+
                     if (peek(parser, parser->idx + 2).type == T_EQUALS_OP) {
+                        if (peek(parser, parser->idx + 1).tok[0] == '&') {
+                            attr |= ATTR_CONST;
+
+                            const int symbolLen = strlen(peek(parser, parser->idx + 1).tok);
+                            char symbolCpy[symbolLen];
+                            strcpy(symbolCpy, peek(parser, parser->idx + 1).tok);
+
+                            unsigned int heapAllocSymbIdx = 0;
+
+                            for (int i = 1; i < strlen(symbolCpy); ++i, ++heapAllocSymbIdx) {
+                                peek(parser, parser->idx + 1).tok[heapAllocSymbIdx] = symbolCpy[i];
+                            }
+
+                            peek(parser, parser->idx + 1).tok[heapAllocSymbIdx] = '\0';
+                        } 
                         varNode = createNode("VAR", peek(parser, parser->idx + 1).tok, false, line);
                     } else {
                         break;
@@ -136,6 +154,12 @@ void parse(parser_t* parser) {
                             break;
                     }
                     
+                    if (!(attr & 0xFF)) {
+                        node_push_child(&varNode, createChild("ATTR", "NONE", false));
+                    } else if (attr & ATTR_CONST) {
+                        node_push_child(&varNode, createChild("ATTR", "CONST", false));
+                    }
+
                     usescope(&varNode, curScope);
                     ast_push_node(&parser->ast, varNode);
                 }

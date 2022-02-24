@@ -75,6 +75,7 @@ void kl_cgen_start(ast_t ast) {
     for (int i = 0; i < nVarArrSz; ++i) {
         vars[i].used = false;
         vars[i].count = 1;
+        vars[i].constant = false;
     }
 
     for (int i = 0; i < nFuncArrSize; ++i) {
@@ -133,6 +134,18 @@ void kl_cgen_start(ast_t ast) {
                     lastVarRef = ast.nodes[j];
                 }
             }
+            
+            if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used)) {
+                vars[hashmap_hash(curNode.value, nVarArrSz)].key =  curNode.value;
+            }
+
+            bool isMatch = strcmp(vars[hashmap_hash(curNode.value, nVarArrSz)].key, curNode.value) == 0;
+
+            if (vars[hashmap_hash(curNode.value, nVarArrSz)].used && vars[hashmap_hash(curNode.value, nVarArrSz)].constant && isMatch) {
+                kl_log_err("SymbolError: Trying to modify a constant variable!", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
 
             if (strcmp(curNode.children[0].key, "STR") != 0) {
                 fprintf(fp, "section .bss\n");
@@ -144,7 +157,7 @@ void kl_cgen_start(ast_t ast) {
                 curSection = DATA_SEC;
                 fprintf(fp, "section .data\n");
                 fprintf(fp, "%s_%d: db \"%s\"\n\n", curNode.value, vars[hashmap_hash(curNode.value, nVarArrSz)].count, curNode.children[0].value);
-            }
+            } 
 
             if (strcmp(curNode.children[0].key, "INT") == 0) {
                 if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used)) {
@@ -165,7 +178,6 @@ void kl_cgen_start(ast_t ast) {
                     fprintf(fp, "    mov [%s_%d], dword %s   ; Stored in executable to use special runtime operations against var. \n\n", curNode.value, vars[hashmap_hash(curNode.value, nVarArrSz)].count, curNode.children[0].value);
                     ++vars[hashmap_hash(curNode.value, nVarArrSz)].count;
                 }
-                
             }
             
             if (strcmp(curNode.children[0].key, "INT") == 0) {
@@ -175,6 +187,10 @@ void kl_cgen_start(ast_t ast) {
             } else {
                 vars[hashmap_hash(curNode.value, nVarArrSz)].strVal = curNode.children[0].value;
                 vars[hashmap_hash(curNode.value, nVarArrSz)].isNumeric = false;
+            }
+
+            if (strcmp(curNode.children[1].value, "CONST") == 0) {
+                vars[hashmap_hash(curNode.value, nVarArrSz)].constant = true;
             }
 
 
@@ -191,7 +207,7 @@ void kl_cgen_start(ast_t ast) {
 
                     varFound = true;
                 } 
-            }
+            } 
 
             if (!(varFound)) {
                 kl_log_err("SymbolError: Trying to print non-existing variable!", curNode.value, curNode.lineNumber);
@@ -199,8 +215,17 @@ void kl_cgen_start(ast_t ast) {
                 break;
             }
 
+            const char* value2Print = vars[hashmap_hash(curNode.value, nVarArrSz)].strVal;
 
-            const char* value2Print = vars[hashmap_hash(curNode.value, nVarArrSz)].strVal; 
+            if (strcmp(vars[hashmap_hash(curNode.value, nVarArrSz)].key, curNode.value) != 0) {
+                varFound = false;
+            }
+
+            if (!(varFound)) {
+                kl_log_err("SymbolError: Trying to print non-existing variable!", curNode.value, curNode.lineNumber);
+                codegenError = true;
+                break;
+            }
 
             if (curSection != CODE_SEC) {
                 curSection = CODE_SEC;
