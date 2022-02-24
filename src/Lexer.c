@@ -372,7 +372,8 @@ void tokenize(lexer_t* lexer, char* buffer) {
                             lbidx = 0;
                             memset(lexBuf, '\0', strlen(lexBuf));
                             lexBuf = (char*)realloc(lexBuf, sizeof(char));
-                            break;
+                            ++lexer->idx;
+                            continue;
                         }
                     } else {
                         bool nonSpace = false;
