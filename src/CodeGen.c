@@ -272,7 +272,7 @@ void kl_cgen_start(ast_t ast) {
             ++curLabel;
             fprintf(fp, "    mov [%s], byte \"%s\"\n\n", curNode.value, curNode.children[0].value);            
         } else if (strcmp(curNode.key, "DEREF_VAR") == 0) {
-            if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used) || nVarArrSz == 0) {
+            if (!(vars[hashmap_hash(curNode.value, nVarArrSz)].used) || nVarArrSz == 0 || strcmp(vars[hashmap_hash(curNode.value, nVarArrSz)].key, curNode.value) != 0) {
                 kl_log_err("SymbolError: No dereferenceable variable by that name.", curNode.value, curNode.lineNumber);
                 codegenError = true;
                 break;
@@ -289,10 +289,69 @@ void kl_cgen_start(ast_t ast) {
                 break;
             }
 
-            fprintf(fp, "_%d:\n", curLabel, curLabel);
-            ++curLabel;
-            fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
-            fprintf(fp, "    mov [ebx], byte \"%s\"\n\n", curNode.children[0].value);
+            bool indexof = false;
+            bool fromIdentifier = false;
+
+            if (strcmp(curNode.children[0].key, "IDENTIFIER") == 0) {
+                fromIdentifier = true;
+
+                if (strcmp(vars[hashmap_hash(curNode.children[0].value, nVarArrSz)].key, curNode.children[0].value) != 0) {
+                    kl_log_err("SymbolError: Variable not found.", curNode.children[0].value, curNode.lineNumber);
+                    codegenError = true;
+                    break;
+                }
+
+            }
+
+            if (strcmp(curNode.children[1].value, "NONE") != 0) {
+                indexof = true;
+                char message[200];
+                sprintf(message, "MemoryError: Bro.. the size of the string is %d and you are trying to access index %d.", strlen(curNode.children[0].value), atoi(curNode.children[1].value));
+
+                if (strcmp(vars[hashmap_hash(curNode.children[0].value, nVarArrSz)].key, curNode.children[0].value) != 0) {
+                    kl_log_err("SymbolError: Variable not found.", curNode.children[0].value, curNode.lineNumber);
+                    codegenError = true;
+                    break;
+                }
+
+                if (atoi(curNode.children[1].value) > strlen(curNode.children[0].value)) {
+                    kl_log_err(message, "", curNode.lineNumber);
+                    codegenError = true;
+                    break;
+                }
+
+            }
+
+            if (!(indexof) && !(fromIdentifier)) {
+                fprintf(fp, "_%d:\n", curLabel, curLabel);
+                ++curLabel;
+                fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
+                fprintf(fp, "    mov [ebx], byte \"%s\"\n\n", curNode.children[0].value);
+            } else if (indexof) {
+                /*
+                 *  TODO: Need to figure out how to get this
+                 *  working for video memory, the following 
+                 *  code doesn't print characters right..
+                 *
+                 *  ?&MSG = "Hi";
+                 *  ?&VGA = 0xB8000;
+                 *  ?&VGA2 = 0xB8000;
+                 *  *?VGA1 = MSG[0];
+                 *  *?VGA2 = MSG[1];
+                 */
+                fprintf(fp, "_%d:\n", curLabel, curLabel);
+                ++curLabel;
+                fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
+                fprintf(fp, "    mov eax, [%s + %d]\n", curNode.children[0].value, atoi(curNode.children[1].value));
+                fprintf(fp, "    mov [ebx], eax\n\n");
+            } else {
+                fprintf(fp, "_%d:\n", curLabel, curLabel);
+                ++curLabel;
+                fprintf(fp, "    mov ebx, [%s]\n", curNode.value);
+                fprintf(fp, "    mov eax, [%s]\n", curNode.children[0].value);    
+                fprintf(fp, "    mov [ebx], eax\n\n");        
+            }
+
         } else if (strcmp(curNode.key, "FUNC") == 0) {
             // TODO: Add handling for regular functions when that gets added.
             curFunction = FUNC_ASM;
@@ -342,7 +401,7 @@ void kl_cgen_start(ast_t ast) {
             fprintf(fp, "_%d:\n", curLabel);
             fprintf(fp, "    call f_%s\n\n", curNode.value);
             ++curLabel;
-        }
+        } 
     } 
     
     // END OF CODE (SYS_EXIT).

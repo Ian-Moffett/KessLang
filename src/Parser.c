@@ -197,6 +197,7 @@ inline void parse(parser_t* parser) {
 
                 break;
             case T_DEREF_OP:
+                // TODO: Add indexing for this section as well.
                 if (peek(parser, parser->idx + 1).type == T_INT && peek(parser, parser->idx + 2).type == T_EQUALS_OP) {
                     kl_assert(strlen(peek(parser, parser->idx + 3).tok) >= 1, "SyntaxError: Expected value after assignment operator.", parser, PARSER_STAGE, line, "");
                     ast_node_t derefNode = createNode("DEREF", peek(parser, parser->idx + 1).tok, false, line);
@@ -224,9 +225,48 @@ inline void parse(parser_t* parser) {
                         node_push_child(&derefNode, createChild("STR", peek(parser, parser->idx + 4).tok, false));
                     }
 
+                    if (peek(parser, parser->idx + 5).type == T_LSQR_BRACKET) {                        
+                        kl_assert(peek(parser, parser->idx + 6).type == T_INT, "SyntaxError: Expected integer after '['", parser, PARSER_STAGE, line, "");
+
+                        if (parser-> error) {
+                            ast_push_node(&parser->ast, derefNode);
+                            break;
+                        }
+
+                        kl_assert(peek(parser, parser->idx + 7).type == T_RSQR_BRACKET, "SyntaxError: Expected ']'.", parser, PARSER_STAGE, line, "");
+                        node_push_child(&derefNode, createChild("IDXOF", peek(parser, parser->idx + 6).tok, false));
+                    } else {
+                        node_push_child(&derefNode, createChild("IDXOF", "NONE", false));
+                    }
 
                     usescope(&derefNode, curScope);
                     ast_push_node(&parser->ast, derefNode);
+                } else if (peek(parser, parser->idx + 1).type == T_VAR_PREFIX && peek(parser, parser->idx + 3).type == T_EQUALS_OP && peek(parser, parser->idx + 4).type == T_VAR_PREFIX) {
+                    bool indexof = false;
+
+                    
+                    kl_assert(peek(parser, parser->idx + 5).type == T_IDENTIFIER, "SyntaxError: Expected identifier after '?'.", parser, PARSER_STAGE, line, "");
+
+                    ast_node_t derefNode = createNode("DEREF_VAR", peek(parser, parser->idx + 2).tok, false, line);
+                    node_push_child(&derefNode, createChild("IDENTIFIER", peek(parser, parser->idx + 5).tok, false));
+                    
+
+                    if (peek(parser, parser->idx + 6).type == T_LSQR_BRACKET) {
+                        kl_assert(peek(parser, parser->idx + 7).type == T_INT, "SyntaxError: Expected integer after '['", parser, PARSER_STAGE, line, "");
+
+                        if (parser->error) {
+                            ast_push_node(&parser->ast, derefNode);
+                            break;
+                        }
+
+                        kl_assert(peek(parser, parser->idx + 8).type == T_RSQR_BRACKET, "SyntaxError: Expected ']'.", parser, PARSER_STAGE, line, "");
+                        node_push_child(&derefNode, createChild("IDXOF", peek(parser, parser->idx + 7).tok, false));
+                    } else {
+                        node_push_child(&derefNode, createChild("IDXOF", "NONE", false));
+                    }
+
+                    usescope(&derefNode, curScope);
+                    ast_push_node(&parser->ast, derefNode); 
                 }
 
                 ++parser->idx;
